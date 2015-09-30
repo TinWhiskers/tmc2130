@@ -4,6 +4,7 @@
 #include <SPI.h>
 
 #include "tmc2130.h"
+//#define SIMULATION 1
 
 tmc2130::tmc2130(uint8_t chipSelectPin)
 {
@@ -12,6 +13,8 @@ tmc2130::tmc2130(uint8_t chipSelectPin)
 
 void tmc2130::begin(boolean initSpi)
 {
+  pinMode(csPin,OUTPUT);
+  digitalWrite(csPin,HIGH);
   if (initSpi)
   {
     SPI.begin();
@@ -56,32 +59,32 @@ void tmc2130::begin(boolean initSpi)
   // CHOPCONF 0x6C
   chopconf_t chopconf;
   chopconf.chm      = false;  // Chopper mode.  Standard mode (SpreadCycle)
-  chopconf.toff     = 5; //TBD
-  chopconf.hstrt    = 4; //TBD
-  chopconf.hend     = 1; //TBD
-  chopconf.fd3      = false; //TBD
-  chopconf.disfdcc  = false; //TBD
-  chopconf.rndtf    = false; //TBD
-  chopconf.tbl      = TBL_36; //TBD.. TBL_24 or TBL_36.
+  chopconf.toff     = 5;      // 0=Driver off. General enable for stepper motor driver.
+  chopconf.hstrt    = 4;      // TBD
+  chopconf.hend     = 1;      // TBD
+  chopconf.fd3      = false;  // TBD
+  chopconf.disfdcc  = false;  // TBD
+  chopconf.rndtf    = false;  // TBD
+  chopconf.tbl      = TBL_36; // TBD.. TBL_24 or TBL_36.
   chopconf.vsense   = false;
-  chopconf.vhighfs  = false; //TBD
-  chopconf.vhighchm = false; //TBD
-  chopconf.sync     = 0; //TBD
+  chopconf.vhighfs  = false;  // TBD
+  chopconf.vhighchm = false;  // TBD
+  chopconf.sync     = 0;      // TBD
   chopconf.mres     = MRES_16;
-  chopconf.intpol   = false;   // MicroPlyer interpolation on/off
-  chopconf.dedge    = false; //TBD
-  chopconf.diss2g   = false; //TBD
+  chopconf.intpol   = false;  // MicroPlyer interpolation on/off
+  chopconf.dedge    = false;  // TBD
+  chopconf.diss2g   = false;  // TBD
   set_chopconf(chopconf);
 
   // COOLCONF 0x6D
   coolconf_t coolconf;
-  coolconf.semin    = 0; // TBD 0..15.  minimum stallGuard2 value for smart current control and smart current enable
+  coolconf.semin    = 0;      // TBD 0..15.  minimum stallGuard2 value for smart current control and smart current enable
   coolconf.seup     = SEUP_1; //TBD 1/2/4/8 Current up step width
-  coolconf.semax    = 0; // TBD 0..15.  stallGuard2 hysteresis value for smart current control
+  coolconf.semax    = 0;      // TBD 0..15.  stallGuard2 hysteresis value for smart current control
   coolconf.sedn     = SEDN_1; // TBD Current down step speed 1/2/8/32
-  coolconf.seimin   = false; // TBD TRUE=1/4 of current setting (IRUN), FALSE=1/2 of current setting (IRUN)
-  coolconf.sgt      = 0; // TBD Signed, -64 to 63
-  coolconf.sfilt    = false; // TBD  TRUE = stallGuard2 filter enable
+  coolconf.seimin   = false;  // TBD TRUE=1/4 of current setting (IRUN), FALSE=1/2 of current setting (IRUN)
+  coolconf.sgt      = 0;      // TBD Signed, -64 to 63
+  coolconf.sfilt    = false;  // TBD  TRUE = stallGuard2 filter enable
   set_coolconf(coolconf);
 
   //DCSTEP ... Not using this crap
@@ -132,6 +135,24 @@ boolean tmc2130::get_gstat_uv_cp() // GSTAT NOTE: Already get [0] and [1] in the
 {
   uint32_t response = spi_read(GSTAT);
   return (boolean)((response >> 2) & 0x01);
+}
+
+ioin_t tmc2130::get_ioin()
+{
+  uint32_t response = spi_read(IOIN);
+  ioin_t ioin;
+  
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 33222222222211111111110000000000
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 10987654321098765432109876543210
+  ioin.step             = (boolean) ((response      ) & 0b00000000000000000000000000000001); // 
+  ioin.direct_mode      = (boolean) ((response >>  1) & 0b00000000000000000000000000000001); // 
+  ioin.dcen_cfg4        = (boolean) ((response >>  2) & 0b00000000000000000000000000000001); // 
+  ioin.dcin_cfg5        = (boolean) ((response >>  3) & 0b00000000000000000000000000000001); // 
+  ioin.drv_enn_cfg6     = (boolean) ((response >>  4) & 0b00000000000000000000000000000001); // 
+  ioin.dco              = (boolean) ((response >>  5) & 0b00000000000000000000000000000001); // 
+  ioin.version          = (uint8_t) ((response >> 24) & 0b00000000000000000000000011111111); // 
+  //                                                      000100010000000000000000
+  return ioin;
 }
 
 //**************************************************************************
@@ -328,16 +349,16 @@ drvst_t  tmc2130::get_drv_status() // stallGuard2 value and driver error flags
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 33222222222211111111110000000000
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 10987654321098765432109876543210
   drv_status.sg_result  = (uint16_t)((response      ) & 0b00000000000000000000000111111111); // 
-  drv_status.fsactive   = (boolean) ((response >> 15) & 0b00000000000000001000000000000000); // 
-  drv_status.cs_actual  = (uint8_t) ((response >> 16) & 0b00000000000111110000000000000000); // 
-  drv_status.stallguard = (boolean) ((response >> 24) & 0b00000001000000000000000000000000); // 
-  drv_status.ot         = (boolean) ((response >> 25) & 0b00000010000000000000000000000000); // 
-  drv_status.otpw       = (boolean) ((response >> 26) & 0b00000100000000000000000000000000); // 
-  drv_status.s2ga       = (boolean) ((response >> 27) & 0b00001000000000000000000000000000); // 
-  drv_status.s2gb       = (boolean) ((response >> 28) & 0b00010000000000000000000000000000); // 
-  drv_status.ola        = (boolean) ((response >> 29) & 0b00100000000000000000000000000000); // 
-  drv_status.olb        = (boolean) ((response >> 30) & 0b01000000000000000000000000000000); // 
-  drv_status.stst       = (boolean) ((response >> 31) & 0b10000000000000000000000000000000); // 
+  drv_status.fsactive   = (boolean) ((response >> 15) & 0b00000000000000000000000000000001); // 
+  drv_status.cs_actual  = (uint8_t) ((response >> 16) & 0b00000000000000000000000000011111); // 
+  drv_status.stallguard = (boolean) ((response >> 24) & 0b00000000000000000000000000000001); // 
+  drv_status.ot         = (boolean) ((response >> 25) & 0b00000000000000000000000000000001); // 
+  drv_status.otpw       = (boolean) ((response >> 26) & 0b00000000000000000000000000000001); // 
+  drv_status.s2ga       = (boolean) ((response >> 27) & 0b00000000000000000000000000000001); // 
+  drv_status.s2gb       = (boolean) ((response >> 28) & 0b00000000000000000000000000000001); // 
+  drv_status.ola        = (boolean) ((response >> 29) & 0b00000000000000000000000000000001); // 
+  drv_status.olb        = (boolean) ((response >> 30) & 0b00000000000000000000000000000001); // 
+  drv_status.stst       = (boolean) ((response >> 31) & 0b00000000000000000000000000000001); // 
 
   return drv_status;
 }
@@ -379,7 +400,7 @@ void tmc2130::spi_write(uint8_t reg, uint32_t data)
   Serial.print("Reg: 0x");
   Serial.print(reg,HEX);
   Serial.print(" : Data: 0b");
-  Serial.print(data,BIN);
+  Serial.println(data,BIN);
 #endif
 }
 
@@ -395,11 +416,11 @@ uint32_t tmc2130::spi_read(uint8_t reg)
 #ifndef SIMULATION
   //Bit 39 of SPI datagram should be '0' for read access
   digitalWrite(csPin, LOW);
-  SPI.transfer(reg); //Send register location
-  SPI.transfer(0x00);  //31..24
-  SPI.transfer(0x00);  //23..16
-  SPI.transfer(0x00);  //15..8
-  SPI.transfer(0x00);  //7..0
+  data = SPI.transfer(reg & 0x7F); //Send register location
+  data = SPI.transfer(0x00);  //31..24
+  data = SPI.transfer(0x00);  //23..16
+  data = SPI.transfer(0x00);  //15..8
+  data = SPI.transfer(0x00);  //7..0
   digitalWrite(csPin, HIGH);
   delay(10);
 
@@ -418,7 +439,7 @@ uint32_t tmc2130::spi_read(uint8_t reg)
   Serial.print("Reg: 0x");
   Serial.print(reg,HEX);
   Serial.print(" : Data: 0b");
-  Serial.print(data,BIN);
+  Serial.println(data,BIN);
 #endif
 
   standstill   = (status >> 3) & 0x01;

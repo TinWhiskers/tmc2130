@@ -192,6 +192,17 @@ typedef struct
   uint8_t start_sin90;
 } mslutstart_t;
 
+typedef struct
+{
+  boolean step;
+  boolean direct_mode;
+  boolean dcen_cfg4;
+  boolean dcin_cfg5;
+  boolean drv_enn_cfg6;
+  boolean dco;
+  uint32_t version;
+} ioin_t;
+
 class tmc2130 {
 public:
   tmc2130(uint8_t chipSelectPin);
@@ -213,6 +224,8 @@ public:
   void set_en_pwm_mode(boolean stealthchopEn); //GCONF bit 2
   boolean get_gstat_uv_cp(); // GSTAT NOTE: Already get [0] and [1] in the spi status byte.. no need to get them twice!
   
+  ioin_t get_ioin();   //Version: 0x11=first version of the IC
+
   //**************************************************************************
   // VELOCITY DEPENDENT DRIVER FEATURE CONTROL REGISTER SET (0x10..0x1F)
   //**************************************************************************
