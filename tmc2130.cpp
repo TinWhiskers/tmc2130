@@ -35,6 +35,7 @@ void tmc2130::begin(boolean initSpi)
 
 
   // GCONF 0x00
+  // TODO: This was 'false' but set it to 'true' for troubleshooting purposes
   set_en_pwm_mode(false); //Disable en_pwm_mode (StealthChop)
   
   // IHOLD_RUN 0x10
@@ -79,8 +80,8 @@ void tmc2130::begin(boolean initSpi)
   // COOLCONF 0x6D
   coolconf_t coolconf;
   coolconf.semin    = 0;      // TBD 0..15.  minimum stallGuard2 value for smart current control and smart current enable
-  coolconf.seup     = SEUP_1; //TBD 1/2/4/8 Current up step width
-  coolconf.semax    = 0;      // TBD 0..15.  stallGuard2 hysteresis value for smart current control
+  coolconf.seup     = SEUP_1; // TBD 1/2/4/8 Current up step width
+  coolconf.semax    = 15;      // TBD 0..15.  stallGuard2 hysteresis value for smart current control
   coolconf.sedn     = SEDN_1; // TBD Current down step speed 1/2/8/32
   coolconf.seimin   = false;  // TBD TRUE=1/4 of current setting (IRUN), FALSE=1/2 of current setting (IRUN)
   coolconf.sgt      = 0;      // TBD Signed, -64 to 63
@@ -93,10 +94,10 @@ void tmc2130::begin(boolean initSpi)
 
   // PWMCONF 0x70
   pwmconf_t pwmconf;
-  pwmconf.pwm_ampl      = 0; // User defined amplitude (offset)
-  pwmconf.pwm_grad      = 0; // User defined amplitude (gradient) or regulation loop gradient
-  pwmconf.pwm_freq      = PWMFREQ_1_683; // PWM frequency selection (410/512/683/1024)
-  pwmconf.pwm_autoscale = false; // PWM automatic amplitude scaling
+  pwmconf.pwm_ampl      = 200;   // User defined amplitude (offset)
+  pwmconf.pwm_grad      = 1;     // User defined amplitude (gradient) or regulation loop gradient
+  pwmconf.pwm_freq      = PWMFREQ_1_1024; // PWM frequency selection (410/512/683/1024)
+  pwmconf.pwm_autoscale = true;  // PWM automatic amplitude scaling
   pwmconf.pwm_symmetric = false; // Force symmetric PWM
   pwmconf.freewheel     = FREEWHEEL_NORMAL; // Allows different standstill modes
   set_pwmconf(pwmconf);
@@ -108,16 +109,18 @@ void tmc2130::begin(boolean initSpi)
   mslutsel.w1 = 1;   // LUT width select from ofs(X1) to ofs(X2-1)
   mslutsel.w2 = 1;   // LUT width select from ofs(X2) to ofs(X3-1)
   mslutsel.w3 = 1;   // LUT width select from ofs(X3) to ofs255
-  mslutsel.x1 = 11;  // LUT segment 1 start
+  mslutsel.x1 = 255; // LUT segment 1 start
   mslutsel.x2 = 255; // LUT segment 2 start
-  mslutsel.x3 = 255; // LUT segment 3 start
+  mslutsel.x3 = 128; // LUT segment 3 start
   set_mslutsel(mslutsel);
 
   // MSLUTSTART 0x69
   mslutstart_t mslutstart;
   mslutstart.start_sin   = 0;
-  mslutstart.start_sin90 = 0;
+  mslutstart.start_sin90 = 247;
   set_mslutstart(mslutstart);
+
+  set_mslut();
 }
 
 //**************************************************************************
@@ -310,10 +313,10 @@ void tmc2130::set_coolconf(coolconf_t coolconf)
   data |= (((uint32_t)coolconf.semin           <<  0) & 0b00000000000000000000000000001111); // 0..3
   data |= (((uint32_t)coolconf.seup            <<  5) & 0b00000000000000000000000001100000); // 5..6
   data |= (((uint32_t)coolconf.semax           <<  8) & 0b00000000000000000000111100000000); // 8..11
-  data |= (((uint32_t)coolconf.sedn            << 13) & 0b00000000000000000000000000000000); // 13..14
-  data |= (((uint32_t)coolconf.seimin          << 15) & 0b00000000000000000010000000000000); // 15
-  data |= (((uint32_t)coolconf.sgt             << 16) & 0b00000000000111111100000000000000); // 16..22
-  data |= (((uint32_t)coolconf.sfilt           << 24) & 0b00000000010000000000000000000000); // 24
+  data |= (((uint32_t)coolconf.sedn            << 13) & 0b00000000000000000110000000000000); // 13..14
+  data |= (((uint32_t)coolconf.seimin          << 15) & 0b00000000000000001000000000000000); // 15
+  data |= (((uint32_t)coolconf.sgt             << 16) & 0b00000000011111110000000000000000); // 16..22
+  data |= (((uint32_t)coolconf.sfilt           << 24) & 0b00000000000000000000000000000000); // 24
   spi_write(COOLCONF, data);
 }
 
@@ -400,7 +403,7 @@ void tmc2130::spi_write(uint8_t reg, uint32_t data)
   Serial.print("Reg: 0x");
   Serial.print(reg,HEX);
   Serial.print(" : Data: 0b");
-  Serial.println(data,BIN);
+  Serial.println(data,HEX);
 #endif
 }
 
