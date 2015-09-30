@@ -314,7 +314,7 @@ void tmc2130::set_coolconf(coolconf_t coolconf)
   data |= (((uint32_t)coolconf.seimin          << 15) & 0b00000000000000000010000000000000); // 15
   data |= (((uint32_t)coolconf.sgt             << 16) & 0b00000000000111111100000000000000); // 16..22
   data |= (((uint32_t)coolconf.sfilt           << 24) & 0b00000000010000000000000000000000); // 24
-  spi_write(CHOPCONF, data);
+  spi_write(COOLCONF, data);
 }
 
 void tmc2130::set_dcctrl(uint8_t dc_time, uint8_t dc_sg)
@@ -322,7 +322,7 @@ void tmc2130::set_dcctrl(uint8_t dc_time, uint8_t dc_sg)
   uint32_t data = 0;
   data |= (((uint32_t)dc_time)     & 0b1111111111);
   data |= (((uint32_t)dc_sg << 16) & 0b11111111);
-  spi_write(IHOLD_RUN, data);
+  spi_write(DCCTRL, data);
 }
 
 void tmc2130::set_pwmconf(pwmconf_t pwmconf)
@@ -336,7 +336,7 @@ void tmc2130::set_pwmconf(pwmconf_t pwmconf)
   data |= (((uint32_t)pwmconf.pwm_autoscale    << 18) & 0b00000000000001000000000000000000); // 18
   data |= (((uint32_t)pwmconf.pwm_symmetric    << 19) & 0b00000000000010000000000000000000); // 19
   data |= (((uint32_t)pwmconf.freewheel        << 20) & 0b00000000001100000000000000000000); // 20..21
-  spi_write(CHOPCONF, data);
+  spi_write(PWMCONF, data);
 }
 
 // DRV_STATUS : 0x6F : stallGuard2 Value and Driver Error Flags
