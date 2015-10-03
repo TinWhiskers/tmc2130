@@ -36,13 +36,13 @@ void tmc2130::begin(boolean initSpi)
 
   // GCONF 0x00
   // TODO: This was 'false' but set it to 'true' for troubleshooting purposes
-  set_en_pwm_mode(false); //Disable en_pwm_mode (StealthChop)
+  set_en_pwm_mode(true); //Disable en_pwm_mode (StealthChop)
   
   // IHOLD_RUN 0x10
   ihold_run_t ihold_run;
-  ihold_run.ihold      = 10;
+  ihold_run.ihold      = 11;
   ihold_run.irun       = 31;
-  ihold_run.iholddelay = 6;
+  ihold_run.iholddelay = 8;
   set_ihold_irun(ihold_run);
 
   // TPOWERDOWN 0x11
@@ -60,13 +60,13 @@ void tmc2130::begin(boolean initSpi)
   // CHOPCONF 0x6C
   chopconf_t chopconf;
   chopconf.chm      = false;  // Chopper mode.  Standard mode (SpreadCycle)
-  chopconf.toff     = 5;      // 0=Driver off. General enable for stepper motor driver.
+  chopconf.toff     = 4;      // 0=Driver off. General enable for stepper motor driver.
   chopconf.hstrt    = 4;      // TBD
-  chopconf.hend     = 1;      // TBD
+  chopconf.hend     = 5;      // TBD
   chopconf.fd3      = false;  // TBD
   chopconf.disfdcc  = false;  // TBD
   chopconf.rndtf    = false;  // TBD
-  chopconf.tbl      = TBL_36; // TBD.. TBL_24 or TBL_36.
+  chopconf.tbl      = TBL_24; // TBD.. TBL_24 or TBL_36.
   chopconf.vsense   = false;
   chopconf.vhighfs  = false;  // TBD
   chopconf.vhighchm = false;  // TBD
@@ -89,8 +89,8 @@ void tmc2130::begin(boolean initSpi)
   set_coolconf(coolconf);
 
   //DCSTEP ... Not using this crap
-  // set_dcctrl(uint8_t dc_time, uint8_t dc_sg);
-  //set_vdcmin(0);
+  //set_dcctrl(uint8_t dc_time, 0);
+  set_vdcmin(0);
 
   // PWMCONF 0x70
   pwmconf_t pwmconf;
@@ -109,9 +109,9 @@ void tmc2130::begin(boolean initSpi)
   mslutsel.w1 = 1;   // LUT width select from ofs(X1) to ofs(X2-1)
   mslutsel.w2 = 1;   // LUT width select from ofs(X2) to ofs(X3-1)
   mslutsel.w3 = 1;   // LUT width select from ofs(X3) to ofs255
-  mslutsel.x1 = 255; // LUT segment 1 start
+  mslutsel.x1 = 128; // LUT segment 1 start
   mslutsel.x2 = 255; // LUT segment 2 start
-  mslutsel.x3 = 128; // LUT segment 3 start
+  mslutsel.x3 = 255; // LUT segment 3 start
   set_mslutsel(mslutsel);
 
   // MSLUTSTART 0x69
@@ -121,6 +121,59 @@ void tmc2130::begin(boolean initSpi)
   set_mslutstart(mslutstart);
 
   set_mslut();
+
+  ioin_t ioin;
+  ioin = get_ioin();
+  if (ioin.version != 0x11)
+  {
+    Serial.print("Error: Unexpected IOIN version#: Expected 0x11.  Received ");
+    Serial.println(ioin.version);
+  }
+
+}
+
+void tmc2130::print_regs()
+{ 
+  Serial.println("Reg  Name        Data      ");
+  Serial.println("---------------------------");
+  //              0x00 GCONF       0x00000000
+  printReg(GCONF,     "GCONF",     spi_read(GCONF) );
+  printReg(GSTAT,     "GSTAT",     spi_read(GCONF) );
+  printReg(IOIN,      "IOIN",      spi_read(GCONF) );
+  printReg(IHOLD_RUN, "IHOLD_RUN", reg_ihold_run   );
+  printReg(TPOWERDOWN,"TPOWERDOWN",reg_tpowerdown );
+  printReg(TSTEP,     "TSTEP",     spi_read(TSTEP) );
+  printReg(TPWMTHRS,  "TPWMTHRS",  reg_tpwmthrs );
+  printReg(TCOOLTHRS, "TCOOLTHRS", reg_tcoolthrs );
+  printReg(THIGH,     "THIGH",     reg_thigh );
+  printReg(VDCMIN,    "VDCMIN",    reg_vdcmin );
+  printReg(MSLUT0,    "MSLUT0",    reg_mslut0 );
+  printReg(MSLUT1,    "MSLUT1",    reg_mslut1 );
+  printReg(MSLUT2,    "MSLUT2",    reg_mslut2 );
+  printReg(MSLUT3,    "MSLUT3",    reg_mslut3 );
+  printReg(MSLUT4,    "MSLUT4",    reg_mslut4 );
+  printReg(MSLUT5,    "MSLUT5",    reg_mslut5 );
+  printReg(MSLUT6,    "MSLUT6",    reg_mslut6 );
+  printReg(MSLUT7,    "MSLUT7",    reg_mslut7 );
+  printReg(MSLUTSEL,  "MSLUTSEL",  reg_mslutsel );
+  printReg(MSLUTSTART,"MSLUTSTART",reg_mslutstart );
+  printReg(MSCNT,     "MSCNT",     spi_read(MSCNT) );
+  printReg(MSCURACT,  "MSCURACT",  spi_read(MSCURACT) );
+  printReg(CHOPCONF,  "CHOPCONF",  spi_read(CHOPCONF) );
+  printReg(COOLCONF,  "COOLCONF",  reg_coolconf );
+  printReg(DCCTRL,    "DCCTRL",    reg_dcctrl );
+  printReg(DRV_STATUS,"DRV_STATUS",spi_read(DRV_STATUS) );
+  printReg(PWMCONF,   "PWMCONF",   reg_pwmconf );
+  printReg(PWM_SCALE, "PWM_SCALE", spi_read(PWM_SCALE) );
+  printReg(LOST_STEPS,"LOST_STEPS",spi_read(LOST_STEPS) );
+  Serial.println("");
+}
+
+void tmc2130::printReg(uint8_t reg, char description[], uint32_t data)
+{
+  char tmp[30]; // for sprintf()
+  sprintf(tmp, "0x%.2X %-11s 0x%.8lX", reg, description, data);
+  Serial.println(tmp);
 }
 
 //**************************************************************************
@@ -131,6 +184,7 @@ void tmc2130::set_en_pwm_mode(boolean stealthchopEn)
 {
   // Flip bit 2 of GCONF
   // NOTE: Assumes all other bits of GCONF will always be '0'!
+  uint32_t data;
   spi_write(GCONF, stealthchopEn?0x00000004:0x00000000);
 }
 
@@ -154,7 +208,6 @@ ioin_t tmc2130::get_ioin()
   ioin.drv_enn_cfg6     = (boolean) ((response >>  4) & 0b00000000000000000000000000000001); // 
   ioin.dco              = (boolean) ((response >>  5) & 0b00000000000000000000000000000001); // 
   ioin.version          = (uint8_t) ((response >> 24) & 0b00000000000000000000000011111111); // 
-  //                                                      000100010000000000000000
   return ioin;
 }
 
@@ -171,30 +224,39 @@ void tmc2130::set_ihold_irun(ihold_run_t ihold_run)
   data |= (((uint32_t)ihold_run.irun           << 8)  & 0b00000000000000000001111100000000); // 8..12
   data |= (((uint32_t)ihold_run.iholddelay     << 16) & 0b00000000000011110000000000000000); // 16..19
   spi_write(IHOLD_RUN, data);
+  reg_ihold_run = data;
 }
 
 void tmc2130::set_tpowerdown(uint8_t tpowerdown)
 {
-  tpowerdown &= 0b11111111;              // 8-bit field
-  spi_write(TPOWERDOWN, tpowerdown);
+  uint32_t data;
+  data = tpowerdown & 0b11111111;              // 8-bit field
+  spi_write(TPOWERDOWN, data);
+  reg_tpowerdown = data;
 }
 
 void tmc2130::set_tpwmthrs(uint16_t tpwmthrs)
 {
-  tpwmthrs &= 0b11111111111111111111;    // 20-bit field
-  spi_write(TPWMTHRS, tpwmthrs);
+  uint32_t data;
+  data = tpwmthrs & 0b11111111111111111111;    // 20-bit field
+  spi_write(TPWMTHRS, data);
+  reg_tpwmthrs = data;
 }
 
 void tmc2130::set_tcoolthrs(uint16_t tcoolthrs)
 {
-  tcoolthrs &= 0b11111111111111111111;    // 20-bit field
-  spi_write(TCOOLTHRS, tcoolthrs);
+  uint32_t data;
+  data = tcoolthrs & 0b11111111111111111111;    // 20-bit field
+  spi_write(TCOOLTHRS, data);
+  reg_tcoolthrs = data;
 }
 
 void tmc2130::set_thigh(uint16_t thigh)
 {
-  thigh     &= 0b11111111111111111111;    // 20-bit field
-  spi_write(THIGH, thigh);
+  uint32_t data;
+  data = thigh & 0b11111111111111111111;    // 20-bit field
+  spi_write(THIGH, data);
+  reg_thigh = data;
 }
 
 uint32_t tmc2130::get_tstep()      // TSTEP Actual measured time between two 1/256 microsteps derived from the step input frequency in units of 1/fCLK.
@@ -209,8 +271,10 @@ uint32_t tmc2130::get_tstep()      // TSTEP Actual measured time between two 1/2
 
 void tmc2130::set_vdcmin(uint32_t vdcmin)
 {
-  vdcmin    &= 0b11111111111111111111111; // 23-bit field
-  spi_write(VDCMIN, vdcmin);
+  uint32_t data;
+  data = vdcmin & 0b11111111111111111111111; // 23-bit field
+  spi_write(VDCMIN, data);
+  reg_vdcmin = data;
 }
 
 uint32_t tmc2130::get_lost_steps() // Number of input steps skipped due to higher load in dcStep operation, if step input does not stop when DC_OUT is low.
@@ -226,15 +290,30 @@ void tmc2130::set_mslut()
 {
   // NOTE: Currently this just sets the registers up for default values.  At some point these might be made 
   // configurable if there is a need to do so, but for now the default values should work just fine.
-  spi_write(MSLUT0,     0xAAAAB554); // 0b10101010101010101011010101010100 = 0xAAAAB554 
-  spi_write(MSLUT1,     0x4A9554AA); // 0b01001010100101010101010010101010 = 0x4A9554AA 
-  spi_write(MSLUT2,     0x24492929); // 0b00100100010010010010100100101001 = 0x24492929 
-  spi_write(MSLUT3,     0x10104222); // 0b00010000000100000100001000100010 = 0x10104222 
-  spi_write(MSLUT4,     0xFBFFFFFF); // 0b11111011111111111111111111111111 = 0xFBFFFFFF 
-  spi_write(MSLUT5,     0xB5BB777D); // 0b10110101101110110111011101111101 = 0xB5BB777D 
-  spi_write(MSLUT6,     0x49295556); // 0b01001001001010010101010101010110 = 0x49295556 
-  spi_write(MSLUT7,     0x00404222); // 0b00000000010000000100001000100010 = 0x00404222 
+  set_mslut_core(MSLUT0,  0xAAAAB554); // 0b10101010101010101011010101010100 = 0xAAAAB554 
+  set_mslut_core(MSLUT1,  0x4A9554AA); // 0b01001010100101010101010010101010 = 0x4A9554AA 
+  set_mslut_core(MSLUT2,  0x24492929); // 0b00100100010010010010100100101001 = 0x24492929 
+  set_mslut_core(MSLUT3,  0x10104222); // 0b00010000000100000100001000100010 = 0x10104222 
+  set_mslut_core(MSLUT4,  0xFBFFFFFF); // 0b11111011111111111111111111111111 = 0xFBFFFFFF 
+  set_mslut_core(MSLUT5,  0xB5BB777D); // 0b10110101101110110111011101111101 = 0xB5BB777D 
+  set_mslut_core(MSLUT6,  0x49295556); // 0b01001001001010010101010101010110 = 0x49295556 
+  set_mslut_core(MSLUT7,  0x00404222); // 0b00000000010000000100001000100010 = 0x00404222 
+}
 
+void tmc2130::set_mslut_core(uint8_t reg, uint32_t value)
+{
+  spi_write(reg, value);
+  switch (reg)
+  {
+    case MSLUT0: reg_mslut0 = value; break;
+    case MSLUT1: reg_mslut1 = value; break;
+    case MSLUT2: reg_mslut2 = value; break;
+    case MSLUT3: reg_mslut3 = value; break;
+    case MSLUT4: reg_mslut4 = value; break;
+    case MSLUT5: reg_mslut5 = value; break;
+    case MSLUT6: reg_mslut6 = value; break;
+    case MSLUT7: reg_mslut7 = value; break;
+  }
 }
 
 void tmc2130::set_mslutsel(mslutsel_t mslutsel)
@@ -250,6 +329,7 @@ void tmc2130::set_mslutsel(mslutsel_t mslutsel)
   data |= (((uint32_t)mslutsel.x2              << 16) & 0b00000000111111110000000000000000); // 16..23
   data |= (((uint32_t)mslutsel.x3              << 24) & 0b11111111000000000000000000000000); // 24..31
   spi_write(MSLUTSEL, data);
+  reg_mslutsel = data;
 }
 
 void tmc2130::set_mslutstart(mslutstart_t mslutstart)
@@ -260,6 +340,7 @@ void tmc2130::set_mslutstart(mslutstart_t mslutstart)
   data |= (((uint32_t)mslutstart.start_sin     << 0)  & 0b00000000000000000000000011111111); // 0..7
   data |= (((uint32_t)mslutstart.start_sin90   << 16) & 0b00000000111111110000000000000000); // 23..16
   spi_write(MSLUTSTART, data);
+  reg_mslutstart = data;
 }
 
 uint16_t tmc2130::get_mscnt()      // MSCNT register.  
@@ -284,6 +365,9 @@ mscuract_t tmc2130::get_mscuract() // actual current_a and current_b read from M
 void tmc2130::set_chopconf(chopconf_t chopconf)
 {
   uint32_t data = 0;
+  chopconf.hend += 3; //Change from {-3,-2,-1,0,1,...,12} to {0..15}
+
+
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 33222222222211111111110000000000
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 10987654321098765432109876543210
   data |= (((uint32_t)chopconf.toff            << 0)  & 0b00000000000000000000000000001111); // 0..3
@@ -318,6 +402,7 @@ void tmc2130::set_coolconf(coolconf_t coolconf)
   data |= (((uint32_t)coolconf.sgt             << 16) & 0b00000000011111110000000000000000); // 16..22
   data |= (((uint32_t)coolconf.sfilt           << 24) & 0b00000000000000000000000000000000); // 24
   spi_write(COOLCONF, data);
+  reg_coolconf = data;
 }
 
 void tmc2130::set_dcctrl(uint8_t dc_time, uint8_t dc_sg)
@@ -326,6 +411,7 @@ void tmc2130::set_dcctrl(uint8_t dc_time, uint8_t dc_sg)
   data |= (((uint32_t)dc_time)     & 0b1111111111);
   data |= (((uint32_t)dc_sg << 16) & 0b11111111);
   spi_write(DCCTRL, data);
+  reg_dcctrl = data;
 }
 
 void tmc2130::set_pwmconf(pwmconf_t pwmconf)
@@ -340,6 +426,7 @@ void tmc2130::set_pwmconf(pwmconf_t pwmconf)
   data |= (((uint32_t)pwmconf.pwm_symmetric    << 19) & 0b00000000000010000000000000000000); // 19
   data |= (((uint32_t)pwmconf.freewheel        << 20) & 0b00000000001100000000000000000000); // 20..21
   spi_write(PWMCONF, data);
+  reg_pwmconf = data;
 }
 
 // DRV_STATUS : 0x6F : stallGuard2 Value and Driver Error Flags
@@ -364,6 +451,22 @@ drvst_t  tmc2130::get_drv_status() // stallGuard2 value and driver error flags
   drv_status.stst       = (boolean) ((response >> 31) & 0b00000000000000000000000000000001); // 
 
   return drv_status;
+}
+
+void tmc2130::print_drv_status()
+{
+  drvst_t drv_status = get_drv_status();
+  Serial.print("drv_status.sg_result: "); Serial.println(drv_status.sg_result,HEX);
+  Serial.print("drv_status.fsactive:  "); Serial.println(drv_status.fsactive,HEX);
+  Serial.print("drv_status.cs_actual: "); Serial.println(drv_status.cs_actual,HEX);
+  Serial.print("drv_status.stallguard:"); Serial.println(drv_status.stallguard,HEX);
+  Serial.print("drv_status.ot:        "); Serial.println(drv_status.ot,HEX);
+  Serial.print("drv_status.otpw:      "); Serial.println(drv_status.otpw,HEX);
+  Serial.print("drv_status.s2ga:      "); Serial.println(drv_status.s2ga,HEX);
+  Serial.print("drv_status.s2gb:      "); Serial.println(drv_status.s2gb,HEX);
+  Serial.print("drv_status.ola:       "); Serial.println(drv_status.ola,HEX);
+  Serial.print("drv_status.olb:       "); Serial.println(drv_status.olb,HEX);
+  Serial.print("drv_status.stst:      "); Serial.println(drv_status.stst,HEX);
 }
 
 // NOTE: This function is very similar to the above function, but is optimized for when only the
@@ -451,4 +554,31 @@ uint32_t tmc2130::spi_read(uint8_t reg)
   reset_flag   = (status >> 0) & 0x01;
 
   return data;
+}
+
+void tmc2130::print_status()
+{
+  Serial.print("standstill  : "); Serial.println(standstill);
+  Serial.print("stallGuard2 : "); Serial.println(stallGuard2);
+  Serial.print("driver_error: "); Serial.println(driver_error);
+  Serial.print("reset_flag  : "); Serial.println(reset_flag);
+  
+}
+
+void tmc2130::print_ioin()
+{
+  ioin_t ioin;
+  ioin = get_ioin();
+
+  Serial.println("IOIN : 0x04 : ");
+  Serial.println("---------------------------");
+
+  Serial.print("step:         "); Serial.println(ioin.step?        "HIGH":"LOW");
+  Serial.print("direct_mode:  "); Serial.println(ioin.direct_mode? "HIGH":"LOW");
+  Serial.print("dcen_cfg4:    "); Serial.println(ioin.dcen_cfg4?   "HIGH":"LOW");
+  Serial.print("dcin_cfg5:    "); Serial.println(ioin.dcin_cfg5?   "HIGH":"LOW");
+  Serial.print("drv_enn_cfg6: "); Serial.println(ioin.drv_enn_cfg6?"HIGH":"LOW");
+  Serial.print("dco:          "); Serial.println(ioin.dco?         "HIGH":"LOW");
+  Serial.print("version:      "); Serial.println(ioin.version,HEX);
+  Serial.println();
 }

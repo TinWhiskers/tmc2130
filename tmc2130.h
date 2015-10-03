@@ -106,8 +106,8 @@ typedef struct
 {
   boolean chm;        // Chopper mode.  TRUE = Constant off time with fast decay time.  FALSE=Standard mode (spreadCycle)
   uint8_t toff;       // TOFF off time & driver enable.  0=Driver disable.  Off time setting controls duration of slow decay phase NCLK= 12 + 32*TOFF
-  uint8_t hstrt;      // 
-  uint8_t hend;       // 
+  int8_t  hstrt;      // 
+  int8_t  hend;       // 
   boolean fd3;        // TRUE = 
   boolean disfdcc;    // Fast decay mode.  TRUE = disfdcc=1 disables current comparator usage for termination of the fast decay cycle
   boolean rndtf;      // Random TOFF time.  TRUE = Random mode, TOFF is random modulated by dNCLK = -12 ... +3 clocks.
@@ -276,10 +276,37 @@ public:
   // (evaluate at a well-known state of operation).
   uint8_t  get_pwm_scale();  
 
+  void print_regs();
+  void print_status();
+  void print_drv_status();
+  void print_ioin();
 
 private:
   uint8_t csPin;
 
+  // These registers are normally write-only.  Store them here so that we can read them back...
+  uint32_t reg_ihold_run;
+  uint32_t reg_tpowerdown;
+  uint32_t reg_tpwmthrs;
+  uint32_t reg_tcoolthrs;
+  uint32_t reg_thigh;      
+  uint32_t reg_vdcmin;     
+  uint32_t reg_mslut0;     
+  uint32_t reg_mslut1;     
+  uint32_t reg_mslut2;     
+  uint32_t reg_mslut3;     
+  uint32_t reg_mslut4;     
+  uint32_t reg_mslut5;     
+  uint32_t reg_mslut6;     
+  uint32_t reg_mslut7;     
+  uint32_t reg_mslutsel;   
+  uint32_t reg_mslutstart; 
+  uint32_t reg_coolconf;   
+  uint32_t reg_dcctrl;     
+  uint32_t reg_pwmconf;
+
+  void set_mslut_core(uint8_t reg, uint32_t value);
+  void printReg(uint8_t reg, char description[], uint32_t data);
   //**************************************************************************
   // LOW-LEVEL SPI FUNCTIONS
   //**************************************************************************
