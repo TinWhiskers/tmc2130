@@ -81,15 +81,15 @@ typedef struct
 // CHOPCONF -> MRES - Micro-step resolution
 enum mres_t
 {
-  MRES_256 = 0b0000,
-  MRES_128 = 0b0001,
-  MRES_64  = 0b0010,
-  MRES_32  = 0b0011,
-  MRES_16  = 0b0100,
-  MRES_8   = 0b0101,
-  MRES_4   = 0b0110,
-  MRES_2   = 0b0111,
-  MRES_1   = 0b1000
+  MRES_256 = 0b0000, // 0 : Native 256 microstep setting
+  MRES_128 = 0b0001, // 1 : 128x microstepping
+  MRES_64  = 0b0010, // 2 : 64x microstepping
+  MRES_32  = 0b0011, // 3 : 32x microstepping
+  MRES_16  = 0b0100, // 4 : 16x microstepping
+  MRES_8   = 0b0101, // 5 : 8x microstepping
+  MRES_4   = 0b0110, // 6 : 4x microstepping
+  MRES_2   = 0b0111, // 7 : 2x microstepping
+  MRES_1   = 0b1000  // 8 : 1x full-step
 };
 
 // CHOPCONF -> TBL - TBL blank time select.  16, 24, 36, or 54 clock cycles.
@@ -200,12 +200,12 @@ typedef struct
   boolean dcin_cfg5;
   boolean drv_enn_cfg6;
   boolean dco;
-  uint32_t version;
+  uint8_t version;
 } ioin_t;
 
-class tmc2130 {
+class Tmc2130 {
 public:
-  tmc2130(uint8_t chipSelectPin);
+  Tmc2130(uint8_t chipSelectPin);
   void begin(boolean initSpi);
 
   //**************************************************************************
@@ -225,11 +225,16 @@ public:
   boolean get_gstat_uv_cp(); // GSTAT NOTE: Already get [0] and [1] in the spi status byte.. no need to get them twice!
   
   ioin_t get_ioin();   //Version: 0x11=first version of the IC
+  uint8_t get_version(); //Less memory intensive way of getting version from ioin.  Useful for seeing if the driver is alive or not.
 
   //**************************************************************************
   // VELOCITY DEPENDENT DRIVER FEATURE CONTROL REGISTER SET (0x10..0x1F)
   //**************************************************************************
   void set_ihold_irun(ihold_run_t ihold_run);
+  void set_ihold(uint8_t ihold);
+  void set_irun(uint8_t irun);
+  void set_iholddelay(  uint8_t iholddelay);
+
   void set_tpowerdown(uint8_t tpowerdown);
   void set_tpwmthrs(uint16_t tpwmthrs);
   void set_tcoolthrs(uint16_t tcoolthrs);
@@ -238,19 +243,12 @@ public:
   uint32_t get_tstep();      // TSTEP Actual measured time between two 1/256 microsteps derived from the step input frequency in units of 1/fCLK.
   
   //**************************************************************************
-  // DCSTEP REGISTERS
-  //**************************************************************************
-  void set_vdcmin(uint32_t vdcmin);
-  uint32_t get_lost_steps(); // Number of input steps skipped due to higher load in dcStep operation, if step input does not stop when DC_OUT is low.
-
-  //**************************************************************************
   // MICROSTEPPING CONTROL REGISTER SET (0x60..0x6B)
   //**************************************************************************
   // NOTE: Write functions TBD, currently done in the constructor by writing the default reg values
   void set_mslut(); //Set default Microstep lookup table.  
   void set_mslutsel(mslutsel_t mslutsel);
   void set_mslutstart(mslutstart_t mslutstart);
-  //void set_mslut(void); //NOTE: No settings here, it is to be hard-coded.
   uint16_t get_mscnt();      // MSCNT register.  
   mscuract_t get_mscuract(); // actual current_a and current_b read from MSLUT, not scaled
 
@@ -258,9 +256,11 @@ public:
   // DRIVER REGISTER SET (0X6C…0X7F)
   //**************************************************************************
   void set_chopconf(chopconf_t chopconf);
+  void set_chopconf_raw(uint32_t raw_word);
   void set_coolconf(coolconf_t coolconf);
   void set_dcctrl(uint8_t dc_time, uint8_t dc_sg);
   void set_pwmconf(pwmconf_t pwmconf);
+  void set_pwmconf_raw(uint32_t raw_word);
 
   // DRV_STATUS : 0x6F : stallGuard2 Value and Driver Error Flags
   // stallGuard2 value and driver error flags
@@ -284,35 +284,36 @@ public:
 private:
   uint8_t csPin;
 
-  // These registers are normally write-only.  Store them here so that we can read them back...
-  uint32_t reg_ihold_run;
-  uint32_t reg_tpowerdown;
-  uint32_t reg_tpwmthrs;
-  uint32_t reg_tcoolthrs;
-  uint32_t reg_thigh;      
-  uint32_t reg_vdcmin;     
-  uint32_t reg_mslut0;     
-  uint32_t reg_mslut1;     
-  uint32_t reg_mslut2;     
-  uint32_t reg_mslut3;     
-  uint32_t reg_mslut4;     
-  uint32_t reg_mslut5;     
-  uint32_t reg_mslut6;     
-  uint32_t reg_mslut7;     
-  uint32_t reg_mslutsel;   
-  uint32_t reg_mslutstart; 
-  uint32_t reg_coolconf;   
-  uint32_t reg_dcctrl;     
-  uint32_t reg_pwmconf;
+  ihold_run_t ihold_run;
 
-  void set_mslut_core(uint8_t reg, uint32_t value);
+  // These registers are normally write-only.  Store them here so that we can read them back...
+  // uint32_t reg_ihold_run;
+  // uint32_t reg_tpowerdown;
+  // uint32_t reg_tpwmthrs;
+  // uint32_t reg_tcoolthrs;
+  // uint32_t reg_thigh;      
+  // uint32_t reg_vdcmin;     
+  // uint32_t reg_mslut0;     
+  // uint32_t reg_mslut1;     
+  // uint32_t reg_mslut2;     
+  // uint32_t reg_mslut3;     
+  // uint32_t reg_mslut4;     
+  // uint32_t reg_mslut5;     
+  // uint32_t reg_mslut6;     
+  // uint32_t reg_mslut7;     
+  // uint32_t reg_mslutsel;   
+  // uint32_t reg_mslutstart; 
+  // uint32_t reg_coolconf;   
+  // uint32_t reg_dcctrl;     
+  // uint32_t reg_pwmconf;
+
   void printReg(uint8_t reg, char description[], uint32_t data);
   //**************************************************************************
   // LOW-LEVEL SPI FUNCTIONS
   //**************************************************************************
   void     spi_write(uint8_t reg, uint32_t data);
   uint32_t spi_read (uint8_t reg);
-  boolean en_pwm_mode;  // GCONF - stealthChop voltage PWM mode enabled (depending on velocity thresholds).
+  //boolean en_pwm_mode;  // GCONF - stealthChop voltage PWM mode enabled (depending on velocity thresholds).
 };
 
 #endif //tmc2130_H
