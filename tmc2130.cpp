@@ -212,7 +212,7 @@ uint8_t Tmc2130::get_version()
 // VELOCITY DEPENDENT DRIVER FEATURE CONTROL REGISTER SET (0x10..0x1F)
 //**************************************************************************
 
-void Tmc2130::set_ihold_irun(ihold_run_t ihold_run)
+void Tmc2130::set_ihold_irun(ihold_run_t iholdrun)
 {
   uint32_t data = 0;
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 33222222222211111111110000000000
@@ -221,7 +221,7 @@ void Tmc2130::set_ihold_irun(ihold_run_t ihold_run)
   data |= (((uint32_t)ihold_run.irun           << 8)  & 0b00000000000000000001111100000000); // 8..12
   data |= (((uint32_t)ihold_run.iholddelay     << 16) & 0b00000000000011110000000000000000); // 16..19
   spi_write(IHOLD_RUN, data);
-  //reg_ihold_run = data;
+  ihold_run = iholdrun; //Whenever this function is called, update the private var
 }
 
 void Tmc2130::set_ihold(uint8_t ihold)

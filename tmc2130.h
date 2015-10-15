@@ -230,7 +230,7 @@ public:
   //**************************************************************************
   // VELOCITY DEPENDENT DRIVER FEATURE CONTROL REGISTER SET (0x10..0x1F)
   //**************************************************************************
-  void set_ihold_irun(ihold_run_t ihold_run);
+  void set_ihold_irun(ihold_run_t iholdrun);
   void set_ihold(uint8_t ihold);
   void set_irun(uint8_t irun);
   void set_iholddelay(  uint8_t iholddelay);
