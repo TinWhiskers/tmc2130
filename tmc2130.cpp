@@ -277,7 +277,7 @@ void Tmc2130::set_tpowerdown(uint8_t tpowerdown)
   //reg_tpowerdown = data;
 }
 
-void Tmc2130::set_tpwmthrs(uint16_t tpwmthrs)
+void Tmc2130::set_tpwmthrs(uint32_t tpwmthrs)
 {
   uint32_t data;
   data = tpwmthrs & 0b11111111111111111111;    // 20-bit field
@@ -285,7 +285,7 @@ void Tmc2130::set_tpwmthrs(uint16_t tpwmthrs)
   //reg_tpwmthrs = data;
 }
 
-void Tmc2130::set_tcoolthrs(uint16_t tcoolthrs)
+void Tmc2130::set_tcoolthrs(uint32_t tcoolthrs)
 {
   uint32_t data;
   data = tcoolthrs & 0b11111111111111111111;    // 20-bit field
@@ -293,7 +293,7 @@ void Tmc2130::set_tcoolthrs(uint16_t tcoolthrs)
   //reg_tcoolthrs = data;
 }
 
-void Tmc2130::set_thigh(uint16_t thigh)
+void Tmc2130::set_thigh(uint32_t thigh)
 {
   uint32_t data;
   data = thigh & 0b11111111111111111111;    // 20-bit field

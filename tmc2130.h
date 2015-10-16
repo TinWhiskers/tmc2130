@@ -234,14 +234,14 @@ public:
   // VELOCITY DEPENDENT DRIVER FEATURE CONTROL REGISTER SET (0x10..0x1F)
   //**************************************************************************
   void set_ihold_irun(ihold_run_t iholdrun);
-  void set_ihold(uint8_t ihold);
-  void set_irun(uint8_t irun);
-  void set_iholddelay(  uint8_t iholddelay);
+  void set_ihold     (uint8_t ihold);
+  void set_irun      (uint8_t irun);
+  void set_iholddelay(uint8_t iholddelay);
 
   void set_tpowerdown(uint8_t tpowerdown);
-  void set_tpwmthrs(uint16_t tpwmthrs);
-  void set_tcoolthrs(uint16_t tcoolthrs);
-  void set_thigh(uint16_t thigh);
+  void set_tpwmthrs  (uint32_t tpwmthrs);
+  void set_tcoolthrs (uint32_t tcoolthrs);
+  void set_thigh     (uint32_t thigh);
 
   uint32_t get_tstep();      // TSTEP Actual measured time between two 1/256 microsteps derived from the step input frequency in units of 1/fCLK.
   
