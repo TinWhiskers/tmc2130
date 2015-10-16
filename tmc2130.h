@@ -262,6 +262,7 @@ public:
   void set_chopconf(chopconf_t chopconf);
   void set_chopconf_raw(uint32_t raw_word);
   void set_coolconf(coolconf_t coolconf);
+  void set_coolconf_raw(uint32_t raw_word);
   void set_dcctrl(uint8_t dc_time, uint8_t dc_sg);
   void set_pwmconf(pwmconf_t pwmconf);
   void set_pwmconf_raw(uint32_t raw_word);

@@ -177,8 +177,8 @@ void Tmc2130::set_small_hysteresis(boolean sh)
   uint32_t data;
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 33222222222211111111110000000000
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 10987654321098765432109876543210
-  data |= (((uint32_t)sh                       << 0)  & 0b00000000000000000100000000000000); // 0..3
-  data |= (((uint32_t)en_pwm_mode              << 8)  & 0b00000000000000000000000000000100); // 8..12
+  data |= (((uint32_t)sh                       <<14)  & 0b00000000000000000100000000000000); // 0..3
+  data |= (((uint32_t)en_pwm_mode              << 2)  & 0b00000000000000000000000000000100); // 8..12
   spi_write(GCONF, data);
 
   small_hysteresis = sh;
@@ -190,11 +190,11 @@ void Tmc2130::set_en_pwm_mode(boolean stealthchopEn)
   uint32_t data;
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 33222222222211111111110000000000
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 10987654321098765432109876543210
-  data |= (((uint32_t)small_hysteresis         << 0)  & 0b00000000000000000100000000000000); // 0..3
-  data |= (((uint32_t)stealthChopEn            << 8)  & 0b00000000000000000000000000000100); // 8..12
+  data |= (((uint32_t)small_hysteresis         <<14)  & 0b00000000000000000100000000000000); // 0..3
+  data |= (((uint32_t)stealthchopEn            << 2)  & 0b00000000000000000000000000000100); // 8..12
   spi_write(GCONF, data);
 
-  en_pwm_mode = stealthChopEn;
+  en_pwm_mode = stealthchopEn;
 }
 
 uint32_t Tmc2130::get_gstat_raw()
@@ -432,6 +432,11 @@ void Tmc2130::set_coolconf(coolconf_t coolconf)
   //reg_coolconf = data;
 }
 
+void Tmc2130::set_coolconf_raw(uint32_t raw_word)
+{
+  spi_write(COOLCONF, raw_word);
+}
+
 void Tmc2130::set_dcctrl(uint8_t dc_time, uint8_t dc_sg)
 {
   uint32_t data = 0;
@@ -489,7 +494,7 @@ uint32_t Tmc2130::get_drv_status_raw()
 {
   uint32_t response = spi_read(DRV_STATUS);
   return response;
-
+}
 
 void Tmc2130::print_drv_status()
 {
