@@ -26,6 +26,11 @@ void Tmc2130::begin(boolean initSpi)
     SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
   }
 
+  //default_config();
+}
+
+void Tmc2130::default_config()
+{
   // GCONF 0x00
   // COMMENTARY: PWM_MODE seems to be better if set to TRUE than false.
   set_en_pwm_mode(true); //Disable en_pwm_mode (StealthChop)
@@ -167,12 +172,35 @@ void Tmc2130::printReg(uint8_t reg, char description[], uint32_t data)
 // GENERAL CONFIGURATION REGISTERS (0x00..0x0F)
 //**************************************************************************
 
+void Tmc2130::set_small_hysteresis(boolean sh)
+{
+  uint32_t data;
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 33222222222211111111110000000000
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 10987654321098765432109876543210
+  data |= (((uint32_t)sh                       << 0)  & 0b00000000000000000100000000000000); // 0..3
+  data |= (((uint32_t)en_pwm_mode              << 8)  & 0b00000000000000000000000000000100); // 8..12
+  spi_write(GCONF, data);
+
+  small_hysteresis = sh;
+}
+
+
 void Tmc2130::set_en_pwm_mode(boolean stealthchopEn)
 {
-  // Flip bit 2 of GCONF
-  // NOTE: Assumes all other bits of GCONF will always be '0'!
   uint32_t data;
-  spi_write(GCONF, stealthchopEn?0x00000004:0x00000000);
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 33222222222211111111110000000000
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 10987654321098765432109876543210
+  data |= (((uint32_t)small_hysteresis         << 0)  & 0b00000000000000000100000000000000); // 0..3
+  data |= (((uint32_t)stealthChopEn            << 8)  & 0b00000000000000000000000000000100); // 8..12
+  spi_write(GCONF, data);
+
+  en_pwm_mode = stealthChopEn;
+}
+
+uint32_t Tmc2130::get_gstat_raw()
+{
+  uint32_t response = spi_read(GSTAT);
+  return response;
 }
 
 boolean Tmc2130::get_gstat_uv_cp() // GSTAT NOTE: Already get [0] and [1] in the spi status byte.. no need to get them twice!
@@ -343,6 +371,12 @@ mscuract_t Tmc2130::get_mscuract() // actual current_a and current_b read from M
   return mscuract;
 }
 
+uint32_t Tmc2130::get_mscuract_raw()
+{
+  uint32_t response = spi_read(MSCURACT);
+  return response;
+}
+
 //**************************************************************************
 // DRIVER REGISTER SET (0X6C…0X7F)
 //**************************************************************************
@@ -450,6 +484,12 @@ drvst_t  Tmc2130::get_drv_status() // stallGuard2 value and driver error flags
 
   return drv_status;
 }
+
+uint32_t Tmc2130::get_drv_status_raw()
+{
+  uint32_t response = spi_read(DRV_STATUS);
+  return response;
+
 
 void Tmc2130::print_drv_status()
 {

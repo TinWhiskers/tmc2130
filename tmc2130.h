@@ -217,11 +217,14 @@ public:
   boolean driver_error; // GSTAT[1] – 1: Signals driver 1 driver error (clear by reading GSTAT)
   boolean reset_flag;   // GSTAT[0] – 1: Signals, that a reset has occurred (clear by reading GSTAT)
 
+  void default_config(); //This sets the default configuration values for all registers
   //**************************************************************************
   // GENERAL CONFIGURATION REGISTERS (0x00..0x0F)
   //**************************************************************************
   //void set_gconf();
   void set_en_pwm_mode(boolean stealthchopEn); //GCONF bit 2
+  void set_small_hysteresis(boolean sh);
+  uint32_t get_gstat_raw();
   boolean get_gstat_uv_cp(); // GSTAT NOTE: Already get [0] and [1] in the spi status byte.. no need to get them twice!
   
   ioin_t get_ioin();   //Version: 0x11=first version of the IC
@@ -251,6 +254,7 @@ public:
   void set_mslutstart(mslutstart_t mslutstart);
   uint16_t get_mscnt();      // MSCNT register.  
   mscuract_t get_mscuract(); // actual current_a and current_b read from MSLUT, not scaled
+  uint32_t get_mscuract_raw();
 
   //**************************************************************************
   // DRIVER REGISTER SET (0X6C…0X7F)
@@ -265,6 +269,7 @@ public:
   // DRV_STATUS : 0x6F : stallGuard2 Value and Driver Error Flags
   // stallGuard2 value and driver error flags
   drvst_t  get_drv_status(); 
+  uint32_t get_drv_status_raw();
   uint16_t get_loadmeas();  // Get back-EMF load measurement from stallGuard2.  This is more efficient than
 
   // PWM_SCALE : 0x71 : Actual PWM amplitude scaler (255=max. Voltage).  StealthChop / Voltage Mode.
@@ -284,6 +289,8 @@ public:
 private:
   uint8_t csPin;
 
+  boolean small_hysteresis;
+  boolean en_pwm_mode;
   ihold_run_t ihold_run;
 
   // These registers are normally write-only.  Store them here so that we can read them back...
